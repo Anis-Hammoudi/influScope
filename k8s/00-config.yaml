@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: influscope-config
+data:
+  # Connection Strings
+  ELASTICSEARCH_URL: "http://elasticsearch:9200"
+  RABBITMQ_URL: "amqp://guest:guest@rabbitmq:5672/"
+
+  # Tuning
+  SCRAPER_INTERVAL: "1s"
+  ES_INDEX_NAME: "influencers"
