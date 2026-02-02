@@ -1,0 +1,13 @@
+# Binaries
+binary
+scraper-bin
+indexer-bin
+api-bin
+*.exe
+
+# IDEs
+.idea/
+
+# Go
+vendor/
+go.work
