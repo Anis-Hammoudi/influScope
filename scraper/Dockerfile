@@ -1,25 +1,21 @@
-FROM golang:1.21-alpine AS builder
-
+# Start from Golang image
+FROM golang:1.25-alpine AS builder
 WORKDIR /app
 
-RUN apk add --no-cache git ca-certificates
+COPY pkg ./pkg
 
-COPY go.mod go.sum ./
+COPY scraper ./scraper
+
+WORKDIR /app/scraper
+
+
 RUN go mod download
 
-COPY . .
-
-RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o scraper .
+RUN go build -o scraper-bin main.go
 
 FROM alpine:latest
-
-RUN apk --no-cache add ca-certificates
-
 WORKDIR /root/
 
-COPY --from=builder /app/scraper .
+COPY --from=builder /app/scraper/scraper-bin .
 
-EXPOSE 8081
-
-CMD ["./scraper"]
-
+CMD ["./scraper-bin"]

@@ -1,4 +1,3 @@
-version: '3.8'
 
 services:
   # 1. The Database (Stores detailed profile info)
@@ -18,7 +17,6 @@ services:
       timeout: 5s
       retries: 5
 
-  # 2. The Search Engine (What makes the search fast)
   elasticsearch:
     image: docker.elastic.co/elasticsearch/elasticsearch:7.17.9
     environment:
@@ -34,7 +32,6 @@ services:
       timeout: 5s
       retries: 5
 
-  # 3. The Queue (Decouples scraping from indexing)
   rabbitmq:
     image: rabbitmq:3-management
     ports:
@@ -63,11 +60,12 @@ services:
       - '--config.file=/etc/prometheus/prometheus.yml'
     depends_on:
       - scraper
-      - indexer
 
-  # 5. Your Go Scraper Service (The "Writer")
+  # 5. Go Scraper Service
   scraper:
-    build: ./scraper
+    build:
+      context: .
+      dockerfile: scraper/Dockerfile
     depends_on:
       rabbitmq:
         condition: service_healthy
@@ -76,33 +74,34 @@ services:
     ports:
       - "8081:8081"
 
-  # 6. Your Go Indexer Service (The "Reader")
-  indexer:
-    build: ./indexer
-    depends_on:
-      rabbitmq:
-        condition: service_healthy
-      elasticsearch:
-        condition: service_healthy
-    environment:
-      RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672/
-      ELASTIC_URL: http://elasticsearch:9200
-    ports:
-      - "8082:8082"
-
-  # 7. Your Go API Service (The Gateway)
-  api:
-    build: ./api
-    depends_on:
-      postgres:
-        condition: service_healthy
-      elasticsearch:
-        condition: service_healthy
-    environment:
-      DATABASE_URL: postgres://user:password@postgres:5432/influencer_db?sslmode=disable
-      ELASTIC_URL: http://elasticsearch:9200
-    ports:
-      - "8080:8080"
+  # --- FUTURE SERVICES (Commented out for now) ---
+# 6. Your Go Indexer Service (The "Reader")
+# indexer:
+#   build: ./indexer
+#   depends_on:
+#     rabbitmq:
+#       condition: service_healthy
+#     elasticsearch:
+#       condition: service_healthy
+#   environment:
+#     RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672/
+#     ELASTIC_URL: http://elasticsearch:9200
+#   ports:
+#     - "8082:8082"
+#
+# 7. Your Go API Service (The Gateway)
+# api:
+#   build: ./api
+#   depends_on:
+#     postgres:
+#       condition: service_healthy
+#     elasticsearch:
+#       condition: service_healthy
+#   environment:
+#     DATABASE_URL: postgres://user:password@postgres:5432/influencer_db?sslmode=disable
+#     ELASTIC_URL: http://elasticsearch:9200
+#   ports:
+#     - "8080:8080"
 
 volumes:
   postgres_data:
