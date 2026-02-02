@@ -4,26 +4,18 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"log"
+
 	"github.com/elastic/go-elasticsearch/v7"
 	"github.com/gin-gonic/gin"
 	"github.com/hammo/influScope/pkg/models"
-	"log"
-	_ "strings"
 )
 
-func main() {
-	// 1. Connect to Elastic
-	es, err := elasticsearch.NewClient(elasticsearch.Config{
-		Addresses: []string{"http://elasticsearch:9200"},
-	})
-	if err != nil {
-		log.Fatalf("Error creating the client: %s", err)
-	}
-
-	// 2. Setup Web Server (Gin)
+// setupRouter allows us to pass in the dependency (ES Client) for testing
+func setupRouter(es *elasticsearch.Client) *gin.Engine {
 	r := gin.Default()
 
-	// 3. Define the Search Endpoint
+	// Define the Search Endpoint
 	r.GET("/search", func(c *gin.Context) {
 		query := c.Query("q")
 		if query == "" {
@@ -31,14 +23,14 @@ func main() {
 			return
 		}
 
-		// 4. Build the Elastic Query
-		var buf bytes.Buffer //
+		// Build the Elastic Query
+		var buf bytes.Buffer
 		queryJSON := map[string]interface{}{
 			"query": map[string]interface{}{
 				"multi_match": map[string]interface{}{
 					"query":     query,
 					"fields":    []string{"bio", "category", "username"},
-					"fuzziness": "AUTO", // Handles typos!
+					"fuzziness": "AUTO",
 				},
 			},
 		}
@@ -47,7 +39,7 @@ func main() {
 			return
 		}
 
-		// 5. Execute Search
+		// Execute Search
 		res, err := es.Search(
 			es.Search.WithContext(context.Background()),
 			es.Search.WithIndex("influencers"),
@@ -60,24 +52,38 @@ func main() {
 		}
 		defer res.Body.Close()
 
-		// 6. Parse Results
+		// Check for 404 or other ES errors that aren't network errors
+		if res.IsError() {
+			c.JSON(500, gin.H{"error": "Elasticsearch returned an error"})
+			return
+		}
+
+		// Parse Results
 		var r map[string]interface{}
 		if err := json.NewDecoder(res.Body).Decode(&r); err != nil {
 			c.JSON(500, gin.H{"error": "Error parsing response"})
 			return
 		}
 
-		// Transform Elastic response into clean JSON for the user
+		// Transform Elastic response into clean JSON
 		var influencers []models.Influencer
-		hits := r["hits"].(map[string]interface{})["hits"].([]interface{})
 
-		for _, hit := range hits {
-			source := hit.(map[string]interface{})["_source"]
-			// Quick Hack: Marshall/Unmarshal to map to struct
-			tmp, _ := json.Marshal(source)
-			var inf models.Influencer
-			json.Unmarshal(tmp, &inf)
-			influencers = append(influencers, inf)
+		// Safe extraction to avoid panics if "hits" is missing
+		if hitsMap, ok := r["hits"].(map[string]interface{}); ok {
+			if hitsList, ok := hitsMap["hits"].([]interface{}); ok {
+				for _, hit := range hitsList {
+					source := hit.(map[string]interface{})["_source"]
+					tmp, _ := json.Marshal(source)
+					var inf models.Influencer
+					json.Unmarshal(tmp, &inf)
+					influencers = append(influencers, inf)
+				}
+			}
+		}
+
+		// Ensure we return empty array [] instead of null
+		if influencers == nil {
+			influencers = []models.Influencer{}
 		}
 
 		c.JSON(200, gin.H{
@@ -86,5 +92,21 @@ func main() {
 		})
 	})
 
+	return r
+}
+
+func main() {
+	// 1. Connect to Elastic
+	es, err := elasticsearch.NewClient(elasticsearch.Config{
+		Addresses: []string{"http://elasticsearch:9200"},
+	})
+	if err != nil {
+		log.Fatalf("Error creating the client: %s", err)
+	}
+
+	// 2. Setup Web Server
+	r := setupRouter(es)
+
+	// 3. Start Server
 	r.Run(":8080")
 }

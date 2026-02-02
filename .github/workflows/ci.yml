@@ -7,7 +7,7 @@ on:
     branches: [ main ]
 
 jobs:
-  build:
+  build-and-test:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -17,20 +17,29 @@ jobs:
         with:
           go-version: '1.25'
 
-      - name: Build Scraper
+      - name: Test & Build Scraper
         run: |
           cd scraper
           go mod download
+          echo " Running Scraper Tests..."
+          go test -v ./...
+          echo " Building Scraper..."
           go build -v ./...
 
-      - name: Build Indexer
+      - name: Test & Build Indexer
         run: |
           cd indexer
           go mod download
+          echo " Running Indexer Tests..."
+          go test -v ./...
+          echo "Building Indexer..."
           go build -v ./...
 
-      - name: Build API
+      - name: Test & Build API
         run: |
           cd api
           go mod download
+          echo "Running API Tests..."
+          go test -v ./...
+          echo "Building API..."
           go build -v ./...
