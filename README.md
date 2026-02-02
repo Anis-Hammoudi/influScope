@@ -11,16 +11,7 @@ InfluScope mimics a production-grade ingestion pipeline. It decouples data disco
 ## Architecture
 
 The system follows a writer/reader pattern decoupled by RabbitMQ. A sidecar Prometheus instance scrapes metrics from all microservices.
-┌─────────────┐      ┌─────────────┐      ┌─────────────┐
-│   Scraper   │─────▶│  RabbitMQ   │─────▶│   Indexer   │
-│  (Service)  │      │  (Fanout)   │      │  (Service)  │
-└─────────────┘      └─────────────┘      └──────┬──────┘
-                                                  │
-                                                  ▼
-┌─────────────┐                          ┌─────────────┐
-│     API     │─────────────────────────▶│Elasticsearch│
-│  (Gateway)  │                          │   (NoSQL)   │
-└─────────────┘                          └─────────────┘
+┌─────────────┐ ┌─────────────┐ ┌─────────────┐ │ Scraper │──────▶│ RabbitMQ │──────▶│ Indexer │ │ (Producer) │ │ (Fanout) │ │ (Consumer) │ └──────┬──────┘ └─────────────┘ └──────┬──────┘ │ │ │ ▼ │ ┌─────────────┐ ┌─────────────┐ └───────────▶│ Prometheus │◀────────│Elasticsearch│ │ (Monitoring)│ │ (NoSQL) │ └─────────────┘ └─────────────┘
 ```
 
 
