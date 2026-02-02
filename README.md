@@ -8,6 +8,8 @@ InfluScope mimics a production-grade ingestion pipeline. It decouples data disco
 
 ## Architecture
 
+The system follows a writer/reader pattern decoupled by RabbitMQ. A sidecar Prometheus instance scrapes metrics from all microservices.
+
 ```mermaid
 graph LR
     subgraph Ingestion
@@ -29,6 +31,7 @@ graph LR
     classDef storage fill:#ff9,stroke:#333,stroke-width:2px;
     class Scraper,Indexer,API service;
     class RMQ,ES,Prom storage;
+```
 
 ## Services
 
