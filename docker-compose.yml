@@ -1,21 +1,5 @@
 
 services:
-  # 1. The Database (Stores detailed profile info)
-  postgres:
-    image: postgres:14-alpine
-    environment:
-      POSTGRES_USER: user
-      POSTGRES_PASSWORD: password
-      POSTGRES_DB: influencer_db
-    ports:
-      - "5432:5432"
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U user -d influencer_db"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
 
   elasticsearch:
     image: docker.elastic.co/elasticsearch/elasticsearch:7.17.9
@@ -78,19 +62,20 @@ services:
     build:
       context: .             # <--- Important! Build from root
       dockerfile: indexer/Dockerfile
+    ports:
+     - "8082:8082"
     depends_on:
       rabbitmq:
         condition: service_healthy
       elasticsearch:
         condition: service_healthy
     environment:
-      # Upfluence AMQP lib reads this
       RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672/
     restart: on-failure
   # 7. Go API Service (The Gateway)
   api:
     build:
-      context: .           
+      context: .
       dockerfile: api/Dockerfile
     depends_on:
       elasticsearch:

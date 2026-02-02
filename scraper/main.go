@@ -14,6 +14,10 @@ import (
 	"github.com/upfluence/amqp"
 	"github.com/upfluence/amqp/amqputil"
 
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"net/http"
+
 	"github.com/hammo/influScope/pkg/models"
 )
 
@@ -26,8 +30,26 @@ var bioKeywords = map[string][]string{
 	"Food":    {"vegan", "tasty", "recipes", "organic", "chef"},
 	"Gaming":  {"esports", "twitch", "fortnite", "streamer"},
 }
+var (
+	profilesDiscovered = prometheus.NewCounter(
+		prometheus.CounterOpts{
+			Name: "influencers_discovered_total",
+			Help: "Total number of influencer profiles generated",
+		},
+	)
+)
+
+func init() {
+	// Register it so Prometheus can see it
+	prometheus.MustRegister(profilesDiscovered)
+}
 
 func main() {
+	// Start a tiny web server for Prometheus in the background
+	go func() {
+		http.Handle("/metrics", promhttp.Handler())
+		http.ListenAndServe(":8081", nil)
+	}()
 	// 1. Initialize Random Seed
 	gofakeit.Seed(time.Now().UnixNano())
 	const exchangeName = "influencer-events"
@@ -94,6 +116,7 @@ func main() {
 			log.Printf(" Failed to publish: %v", err)
 		} else {
 			log.Printf("Discovered: %-15s | %s", profile.Username, profile.Category)
+			profilesDiscovered.Inc()
 		}
 
 		// D. Wait (Simulate network latency)
