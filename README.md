@@ -8,17 +8,27 @@ InfluScope mimics a production-grade ingestion pipeline. It decouples data disco
 
 ## Architecture
 
-┌─────────────┐      ┌─────────────┐      ┌─────────────┐
-│   Scraper   │─────▶│  RabbitMQ   │─────▶│   Indexer   │
-│  (Service)  │      │  (Fanout)   │      │  (Service)  │
-└─────────────┘      └─────────────┘      └──────┬──────┘
-                                                  │
-                                                  ▼
-┌─────────────┐                          ┌─────────────┐
-│     API     │─────────────────────────▶│Elasticsearch│
-│  (Gateway)  │                          │   (NoSQL)   │
-└─────────────┘                          └─────────────┘
-```
+```mermaid
+graph LR
+    subgraph Ingestion
+        Scraper[Scraper Service] -->|Publishes Events| RMQ(RabbitMQ Fanout)
+        RMQ -->|Consumes| Indexer[Indexer Service]
+    end
+
+    subgraph Storage & Search
+        Indexer -->|Bulk Index| ES[(Elasticsearch)]
+        API[API Gateway] -->|Search Query| ES
+    end
+
+    subgraph Observability
+        Scraper -.->|Metrics :8081| Prom(Prometheus)
+        Indexer -.->|Metrics :8082| Prom
+    end
+
+    classDef service fill:#f9f,stroke:#333,stroke-width:2px;
+    classDef storage fill:#ff9,stroke:#333,stroke-width:2px;
+    class Scraper,Indexer,API service;
+    class RMQ,ES,Prom storage;
 
 ## Services
 
