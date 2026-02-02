@@ -1,25 +1,21 @@
-FROM golang:1.21-alpine AS builder
+FROM golang:1.25-alpine AS builder
 
 WORKDIR /app
 
-RUN apk add --no-cache git ca-certificates
+# 1. Copy Shared Pkg
+COPY pkg ./pkg
 
-COPY go.mod go.sum ./
+# 2. Copy Indexer
+COPY indexer ./indexer
+
+# 3. Build
+WORKDIR /app/indexer
 RUN go mod download
+RUN go build -o indexer-bin main.go
 
-COPY . .
-
-RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o indexer .
-
+# --- Run Stage ---
 FROM alpine:latest
-
-RUN apk --no-cache add ca-certificates
-
 WORKDIR /root/
+COPY --from=builder /app/indexer/indexer-bin .
 
-COPY --from=builder /app/indexer .
-
-EXPOSE 8082
-
-CMD ["./indexer"]
-
+CMD ["./indexer-bin"]

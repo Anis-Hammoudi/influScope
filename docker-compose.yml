@@ -74,34 +74,31 @@ services:
     ports:
       - "8081:8081"
 
-  # --- FUTURE SERVICES (Commented out for now) ---
-# 6. Your Go Indexer Service (The "Reader")
-# indexer:
-#   build: ./indexer
-#   depends_on:
-#     rabbitmq:
-#       condition: service_healthy
-#     elasticsearch:
-#       condition: service_healthy
-#   environment:
-#     RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672/
-#     ELASTIC_URL: http://elasticsearch:9200
-#   ports:
-#     - "8082:8082"
-#
-# 7. Your Go API Service (The Gateway)
-# api:
-#   build: ./api
-#   depends_on:
-#     postgres:
-#       condition: service_healthy
-#     elasticsearch:
-#       condition: service_healthy
-#   environment:
-#     DATABASE_URL: postgres://user:password@postgres:5432/influencer_db?sslmode=disable
-#     ELASTIC_URL: http://elasticsearch:9200
-#   ports:
-#     - "8080:8080"
+  indexer:
+    build:
+      context: .             # <--- Important! Build from root
+      dockerfile: indexer/Dockerfile
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      elasticsearch:
+        condition: service_healthy
+    environment:
+      # Upfluence AMQP lib reads this
+      RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672/
+    restart: on-failure
+  # 7. Go API Service (The Gateway)
+  api:
+    build:
+      context: .           
+      dockerfile: api/Dockerfile
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+    environment:
+      ELASTIC_URL: http://elasticsearch:9200
+    ports:
+      - "8080:8080"          # Expose to your host
 
 volumes:
   postgres_data:

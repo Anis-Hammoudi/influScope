@@ -50,8 +50,7 @@ func main() {
 			break
 		}
 
-		fmt.Printf("⚠️ Connection failed: %v. Retrying in 3 seconds...\n", err)
-		broker.Close()
+		fmt.Printf(" Connection failed: %v. Retrying in 3 seconds...\n", err)
 		time.Sleep(3 * time.Second)
 	}
 
