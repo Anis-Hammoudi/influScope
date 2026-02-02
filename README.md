@@ -2,8 +2,6 @@
 
 A distributed influencer discovery and search platform designed with an event-driven microservices architecture.
 
-![CI Status](https://github.com/hammo/influScope/actions/workflows/ci.yml/badge.svg)
-
 ## Overview
 
 InfluScope mimics a production-grade ingestion pipeline. It decouples data discovery (scraping) from data indexing using a message broker, ensuring system resilience and scalability. The system allows users to search for influencers based on bio keywords, categories, and usernames via a REST API, while providing real-time metrics on data throughput.
