@@ -19,7 +19,7 @@ spec:
       containers:
         - name: api
           image: hammo/influscope-api:latest
-          imagePullPolicy: IfNotPresent  # <--- This line saves you
+          imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 8080
           envFrom:
@@ -73,10 +73,11 @@ spec:
       containers:
         - name: scraper
           image: hammo/influscope-scraper:latest
-          imagePullPolicy: IfNotPresent  # <--- ADD THIS
+          imagePullPolicy: IfNotPresent
           envFrom:
             - configMapRef:
                 name: influscope-config
+          # Note: Scraper depends on S3 service being active
           livenessProbe:
             httpGet:
               path: /metrics
@@ -106,7 +107,7 @@ spec:
       containers:
         - name: indexer
           image: hammo/influscope-indexer:latest
-          imagePullPolicy: IfNotPresent  # <--- ADD THIS
+          imagePullPolicy: IfNotPresent
           envFrom:
             - configMapRef:
                 name: influscope-config

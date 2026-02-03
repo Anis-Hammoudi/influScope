@@ -6,6 +6,7 @@ data:
   # Connection Strings
   ELASTICSEARCH_URL: "http://elasticsearch:9200"
   RABBITMQ_URL: "amqp://guest:guest@rabbitmq:5672/"
+  S3_ENDPOINT: "http://s3:9000"
 
   # Tuning
   SCRAPER_INTERVAL: "1s"

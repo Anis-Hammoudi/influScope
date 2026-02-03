@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -19,6 +20,11 @@ import (
 	"net/http"
 
 	"github.com/hammo/influScope/pkg/models"
+
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/credentials"
+	"github.com/aws/aws-sdk-go-v2/service/s3"
 )
 
 // Configuration for "Smart" Data
@@ -44,6 +50,79 @@ func init() {
 	prometheus.MustRegister(profilesDiscovered)
 }
 
+// S3 Client Wrapper
+type StorageService struct {
+	Client *s3.Client
+	Bucket string
+}
+
+func NewStorageService() *StorageService {
+	// 1. Configure AWS SDK
+	cfg, err := config.LoadDefaultConfig(context.TODO(),
+		config.WithRegion("us-east-1"),
+		config.WithCredentialsProvider(credentials.NewStaticCredentialsProvider("admin", "password", "")),
+	)
+	if err != nil {
+		log.Fatalf("unable to load SDK config, %v", err)
+	}
+
+	client := s3.NewFromConfig(cfg, func(o *s3.Options) {
+		o.BaseEndpoint = aws.String("http://s3:9000")
+		o.UsePathStyle = true
+	})
+
+	svc := &StorageService{Client: client, Bucket: "avatars"}
+
+	// 2. SELF-HEALING: Ensure Bucket Exists
+	// We loop here because MinIO might take a few seconds to start up.
+	// This is much better than a "sleep 5" in a shell script.
+	for i := 0; i < 30; i++ {
+		_, err := client.HeadBucket(context.TODO(), &s3.HeadBucketInput{
+			Bucket: aws.String(svc.Bucket),
+		})
+
+		if err == nil {
+			log.Println(" S3 Bucket 'avatars' exists.")
+			break
+		}
+
+		// If it doesn't exist (or we can't connect yet), try to create it
+		_, err = client.CreateBucket(context.TODO(), &s3.CreateBucketInput{
+			Bucket: aws.String(svc.Bucket),
+		})
+
+		if err == nil {
+			log.Println(" Created missing S3 Bucket 'avatars'.")
+			break
+		}
+
+		log.Printf("Waiting for S3 (MinIO) to be ready... (%d/30)", i+1)
+		time.Sleep(2 * time.Second)
+	}
+
+	return svc
+}
+func (s *StorageService) UploadAvatar(username string) string {
+	// Generate a fake image (random colored pixel)
+	// In production, this would be the downloaded profile picture
+	dummyImage := []byte(fmt.Sprintf("Fake image content for %s", username))
+	key := fmt.Sprintf("%s.txt", username) // Using .txt for simplicity, usually .jpg
+
+	_, err := s.Client.PutObject(context.TODO(), &s3.PutObjectInput{
+		Bucket:      aws.String(s.Bucket),
+		Key:         aws.String(key),
+		Body:        bytes.NewReader(dummyImage),
+		ContentType: aws.String("text/plain"),
+	})
+
+	if err != nil {
+		log.Printf("Failed to upload avatar to S3: %v", err)
+		return ""
+	}
+
+	// Return the public URL
+	return fmt.Sprintf("http://localhost:9000/%s/%s", s.Bucket, key)
+}
 func main() {
 	// Start a tiny web server for Prometheus in the background
 	go func() {
@@ -81,14 +160,17 @@ func main() {
 		log.Fatalf("Could not connect to RabbitMQ after %d attempts. Exiting.", maxRetries)
 	}
 	defer broker.Close()
-
+	storage := NewStorageService()
+	log.Println("AWS S3 (MinIO) Client Initialized")
 	ctx := context.Background()
 	fmt.Println("Scraper Service Started! Generating profiles...")
 	// 4. The Infinite Generation Loop
 	for {
-		// A. Generate a realistic profile
+		// A. Generate a profile
 		profile := generateSmartProfile()
 
+		url := storage.UploadAvatar(profile.Username)
+		profile.AvatarURL = url
 		// B. Convert to JSON
 		body, err := json.Marshal(profile)
 		if err != nil {

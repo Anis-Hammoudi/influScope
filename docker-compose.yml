@@ -1,6 +1,5 @@
-
 services:
-
+  # 1. Search Engine
   elasticsearch:
     image: docker.elastic.co/elasticsearch/elasticsearch:7.17.9
     environment:
@@ -16,11 +15,12 @@ services:
       timeout: 5s
       retries: 5
 
+  # 2. Message Broker
   rabbitmq:
-    image: rabbitmq:3-management
+    image: rabbitmq:3.12-management
     ports:
       - "5672:5672"   # App connection
-      - "15672:15672" # Web UI (Go to http://localhost:15672)
+      - "15672:15672" # Dashboard
     environment:
       RABBITMQ_DEFAULT_USER: guest
       RABBITMQ_DEFAULT_PASS: guest
@@ -32,7 +32,19 @@ services:
       timeout: 5s
       retries: 5
 
-  # 4. Prometheus (Metrics collection)
+  # 3. S3 Object Storage (MinIO)
+  s3:
+    image: minio/minio:latest
+    container_name: influscope-s3
+    ports:
+      - "9000:9000" # API Port
+      - "9001:9001" # Console Port
+    environment:
+      MINIO_ROOT_USER: "admin"
+      MINIO_ROOT_PASSWORD: "password"
+    command: server /data --console-address ":9001"
+
+  # 5. Prometheus (Metrics)
   prometheus:
     image: prom/prometheus:latest
     ports:
@@ -45,7 +57,7 @@ services:
     depends_on:
       - scraper
 
-  # 5. Go Scraper Service
+  # 6. Scraper Service
   scraper:
     build:
       context: .
@@ -53,17 +65,20 @@ services:
     depends_on:
       rabbitmq:
         condition: service_healthy
+      s3:
+        condition: service_started
     environment:
       RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672/
     ports:
       - "8081:8081"
 
+  # 7. Indexer Service
   indexer:
     build:
-      context: .             # <--- Important! Build from root
+      context: .
       dockerfile: indexer/Dockerfile
     ports:
-     - "8082:8082"
+      - "8082:8082"
     depends_on:
       rabbitmq:
         condition: service_healthy
@@ -72,7 +87,8 @@ services:
     environment:
       RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672/
     restart: on-failure
-  # 7. Go API Service (The Gateway)
+
+  # 8. API Service
   api:
     build:
       context: .
@@ -83,11 +99,9 @@ services:
     environment:
       ELASTIC_URL: http://elasticsearch:9200
     ports:
-      - "8080:8080"          # Expose to your host
+      - "8080:8080"
 
 volumes:
-  postgres_data:
   elasticsearch_data:
   rabbitmq_data:
   prometheus_data:
-

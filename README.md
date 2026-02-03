@@ -12,10 +12,26 @@ The system follows a writer/reader pattern decoupled by RabbitMQ. A sidecar Prom
 
 ```mermaid
 graph LR
-    Scraper -->|Events| RabbitMQ
-    RabbitMQ -->|Consume| Indexer
-    Indexer -->|Bulk Index| ES[(Elasticsearch)]
-    API -->|Search| ES
+    subgraph "Infrastructure"
+        ES[(Elasticsearch)]
+        RMQ(RabbitMQ)
+        S3[(S3 / MinIO)]
+    end
+
+    subgraph "Microservices"
+        Scraper
+        Indexer
+        API
+    end
+
+    Scraper -->|1. Upload Avatar| S3
+    Scraper -->|2. Publish Metadata| RMQ
+
+    RMQ -->|3. Consume| Indexer
+    Indexer -->|4. Index| ES
+
+    API -->|5. Search| ES
+
     Scraper -.->|Metrics| Prom(Prometheus)
     Indexer -.->|Metrics| Prom
 ```

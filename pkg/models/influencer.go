@@ -9,4 +9,5 @@ type Influencer struct {
 	Category       string  `json:"category"`
 	Bio            string  `json:"bio"`
 	EngagementRate float64 `json:"engagement_rate"`
+	AvatarURL      string  `json:"avatar_url"`
 }
