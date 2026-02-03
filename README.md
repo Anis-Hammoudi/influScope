@@ -33,15 +33,16 @@ graph LR
 * **Messaging:** RabbitMQ (utilizing `upfluence/amqp` for connection pooling)
 * **Search Engine:** Elasticsearch 7.17
 * **Observability:** Prometheus
-* **CI/CD:** GitHub Actions (Automated build & test pipelines)
-* **Infrastructure:** Docker & Docker Compose
+* **Orchestration:** Kubernetes (Manifests included)
+* **CI/CD:** GitHub Actions (Automated testing & build)
+* **Automation:** GNU Make
 
 ## Design Decisions
 
 * **Decoupling:** RabbitMQ is used to separate the scraping logic from the indexing logic. This prevents data loss if the search engine is under heavy load; messages simply accumulate in the queue.
 * **Observability:** Custom Prometheus instrumentation tracks `influencers_discovered_total` vs `influencers_indexed_total`, allowing for immediate detection of pipeline latency or dropped messages.
 * **Resilience:** Services implement application-level retry logic with exponential backoff to handle infrastructure startup latency and temporary network partitions.
-* **Connection Pooling:** Utilizes the `upfluence/amqp` library to manage efficient channel reuse and graceful recovery.
+* **Production Readiness:** Includes a `k8s/` directory with separated ConfigMaps, StatefulSets (Infrastructure), and Deployments (Apps) to mimic a real cluster setup.
 
 ## Quick Start
 
@@ -49,6 +50,7 @@ graph LR
 
 * Docker Desktop
 * Go 1.25+ (for local development)
+* Make (Optional, for automation)
 
 ### Running the Stack
 
@@ -58,12 +60,18 @@ graph LR
     cd influScope
     ```
 
-2.  **Start services**
+2.  **Start Services (Automated)**
     ```bash
-    docker-compose up --build
+    make up
+    ```
+    *(Or manually: `docker-compose up --build`)*
+
+3.  **Run Tests**
+    ```bash
+    make test
     ```
 
-3.  **Verify Status**
+4.  **Verify Status**
     * **Search API:** `http://localhost:8080/search?q=tech`
     * **RabbitMQ Dashboard:** `http://localhost:15672` (guest/guest)
     * **Prometheus Dashboard:** `http://localhost:9090`
@@ -76,6 +84,18 @@ To verify the pipeline health, open Prometheus (`http://localhost:9090`) and que
 * `influencers_indexed_total` (Indexer throughput)
 
 *If "Discovered" > "Indexed", the queue is building backpressure.*
+
+## Kubernetes Deployment
+
+This project includes production-ready Kubernetes manifests in the `k8s/` directory.
+
+```bash
+# Deploy to local cluster
+kubectl apply -f k8s/00-config.yaml
+kubectl apply -f k8s/01-infrastructure.yaml
+kubectl apply -f k8s/02-apps.yaml
+```
+
 
 ## CI/CD Pipeline
 
