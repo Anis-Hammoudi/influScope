@@ -1,45 +1,44 @@
-name: CI
+name: Build & Publish Docker Images
 
 on:
   push:
-    branches: [ main ]
-  pull_request:
-    branches: [ main ]
+    branches: [ "main" ]
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
 
 jobs:
-  build-and-test:
+  build-and-push:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
     steps:
-      - uses: actions/checkout@v3
+      - name: Checkout repository
+        uses: actions/checkout@v3
 
-      - name: Set up Go
-        uses: actions/setup-go@v4
+      - name: Log in to the Container registry
+        uses: docker/login-action@v2
         with:
-          go-version: '1.25'
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Test & Build Scraper
+      - name: Build and push Docker images
         run: |
-          cd scraper
-          go mod download
-          echo " Running Scraper Tests..."
-          go test -v ./...
-          echo " Building Scraper..."
-          go build -v ./...
-
-      - name: Test & Build Indexer
-        run: |
-          cd indexer
-          go mod download
-          echo " Running Indexer Tests..."
-          go test -v ./...
-          echo "Building Indexer..."
-          go build -v ./...
-
-      - name: Test & Build API
-        run: |
-          cd api
-          go mod download
-          echo "Running API Tests..."
-          go test -v ./...
-          echo "Building API..."
-          go build -v ./...
+          # Convert repo name to lowercase for Docker image tag
+          REPO_LOWER=$(echo "${{ github.repository }}" | tr '[:upper:]' '[:lower:]')
+          
+          # Build Scraper
+          docker build -t ghcr.io/$REPO_LOWER/scraper:latest -f scraper/Dockerfile .
+          docker push ghcr.io/$REPO_LOWER/scraper:latest
+          
+          # Build Indexer
+          docker build -t ghcr.io/$REPO_LOWER/indexer:latest -f indexer/Dockerfile .
+          docker push ghcr.io/$REPO_LOWER/indexer:latest
+          
+          # Build API
+          docker build -t ghcr.io/$REPO_LOWER/api:latest -f api/Dockerfile .
+          docker push ghcr.io/$REPO_LOWER/api:latest
