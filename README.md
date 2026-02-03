@@ -76,6 +76,14 @@ graph LR
     * **RabbitMQ Dashboard:** `http://localhost:15672` (guest/guest)
     * **Prometheus Dashboard:** `http://localhost:9090`
 
+## Performance Benchmarks
+
+To ensure scalability, the system was load-tested using **k6**.
+
+* **Scenario:** 50 concurrent users (Virtual Users) performing continuous search queries.
+* **Result:** 100% Success Rate (0 Failed Requests).
+* **Latency:** Average response time of **6.04ms** (p95: 9.18ms).
+* **Throughput:** ~40 req/s on local hardware.
 ### Observability
 
 To verify the pipeline health, open Prometheus (`http://localhost:9090`) and query the custom metrics:

@@ -1,20 +1,21 @@
+# Stage 1: Builder
 FROM golang:1.25-alpine AS builder
-
 WORKDIR /app
-
-# 1. Copy Shared Pkg
+# 1. Copy Dependency Files
 COPY pkg ./pkg
+COPY indexer/go.mod indexer/go.sum ./indexer/
 
-# 2. Copy Indexer
-COPY indexer ./indexer
-
-# 3. Build
+# 2. Download Dependencies
 WORKDIR /app/indexer
 RUN go mod download
-RUN go build -o indexer-bin main.go
 
-# --- Run Stage ---
+# 3. Copy Source Code & Build
+COPY indexer .
+RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-w -s" -o indexer-bin .
+
+# Stage 2: Runner (Tiny Alpine Image)
 FROM alpine:latest
+
 WORKDIR /root/
 COPY --from=builder /app/indexer/indexer-bin .
 
