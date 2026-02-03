@@ -36,11 +36,15 @@ graph LR
     Indexer -.->|Metrics| Prom
 ```
 
+#Here is the final, formatted Markdown block for your README. Copy and paste this directly after your Mermaid diagram.
+
+Markdown
 ## Services
 
-* **Scraper:** Generates influencer profiles and publishes events to the `influencer-events` exchange. Exposes ingestion metrics on `:8081/metrics`.
-* **Indexer:** Consumes messages from the queue and performs bulk indexing operations into Elasticsearch. Exposes indexing counters and error rates on `:8082/metrics`.
+* **Scraper:** Generates smart influencer profiles, **offloads avatars to S3 (MinIO)**, and publishes metadata events to RabbitMQ. Implements "self-healing" logic to initialize storage buckets automatically.
+* **Indexer:** Consumes messages from the queue and performs bulk indexing operations into Elasticsearch.
 * **API:** A lightweight HTTP gateway that translates user search queries into Elasticsearch DSL.
+* **MinIO (S3):** Provides S3-compatible object storage for static assets (images), mimicking a production AWS environment.
 * **Prometheus:** Aggregates metrics from the Scraper and Indexer to visualize system throughput and bottlenecks.
 
 ## Tech Stack
@@ -48,17 +52,22 @@ graph LR
 * **Language:** Go (Golang) 1.25
 * **Messaging:** RabbitMQ (utilizing `upfluence/amqp` for connection pooling)
 * **Search Engine:** Elasticsearch 7.17
+* **Object Storage:** AWS S3 / MinIO (AWS SDK v2)
 * **Observability:** Prometheus
-* **Orchestration:** Kubernetes (Manifests included)
-* **CI/CD:** GitHub Actions (Automated testing & build)
+* **Orchestration:** Kubernetes (StatefulSets & Deployments)
+* **CI/CD:** GitHub Actions
 * **Automation:** GNU Make
 
 ## Design Decisions
 
-* **Decoupling:** RabbitMQ is used to separate the scraping logic from the indexing logic. This prevents data loss if the search engine is under heavy load; messages simply accumulate in the queue.
-* **Observability:** Custom Prometheus instrumentation tracks `influencers_discovered_total` vs `influencers_indexed_total`, allowing for immediate detection of pipeline latency or dropped messages.
-* **Resilience:** Services implement application-level retry logic with exponential backoff to handle infrastructure startup latency and temporary network partitions.
-* **Production Readiness:** Includes a `k8s/` directory with separated ConfigMaps, StatefulSets (Infrastructure), and Deployments (Apps) to mimic a real cluster setup.
+![AWS SAA](https://img.shields.io/badge/AWS-Solutions_Architect_Associate-FF9900?style=for-the-badge&logo=amazonaws&logoColor=white)
+
+* **Hybrid Storage Pattern (AWS SAA):** Following AWS Well-Architected Framework best practices, I decoupled the storage of static assets from the metadata database.
+    * **Structured Data (Bio, Follower Count):** Stored in **Elasticsearch** for low-latency indexing and search.
+    * **Unstructured Data (Profile Images):** Offloaded to **S3** to reduce database bloat and leverage cost-effective tiered storage.
+* **Self-Healing Infrastructure:** The Scraper service implements initialization logic to detect if the S3 bucket is missing and create it automatically, eliminating race conditions during startup.
+* **Decoupling:** RabbitMQ separates scraping from indexing. This prevents data loss if the search engine is under heavy load; messages simply accumulate in the queue.
+* **Observability:** Custom Prometheus instrumentation tracks `influencers_discovered_total` vs `influencers_indexed_total`, allowing for immediate detection of pipeline latency.
 
 ## Quick Start
 
@@ -66,7 +75,7 @@ graph LR
 
 * Docker Desktop
 * Go 1.25+ (for local development)
-* Make (Optional, for automation)
+* Make (Optional)
 
 ### Running the Stack
 
@@ -89,8 +98,9 @@ graph LR
 
 4.  **Verify Status**
     * **Search API:** `http://localhost:8080/search?q=tech`
+    * **MinIO Console (S3):** `http://localhost:9001` (User: `admin` / Pass: `password`)
     * **RabbitMQ Dashboard:** `http://localhost:15672` (guest/guest)
-    * **Prometheus Dashboard:** `http://localhost:9090`
+    * **Prometheus:** `http://localhost:9090`
 
 ## Performance Benchmarks
 
@@ -119,7 +129,11 @@ kubectl apply -f k8s/00-config.yaml
 kubectl apply -f k8s/01-infrastructure.yaml
 kubectl apply -f k8s/02-apps.yaml
 ```
+* StatefulSets: Used for RabbitMQ, Elasticsearch, and MinIO to ensure stable network IDs and persistent storage.
 
+* Deployments: Used for stateless apps (API, Scraper, Indexer) to allow for easy scaling.
+
+* ConfigMaps: Decouples configuration (URLs, Tuning params) from the application code.
 
 ## CI/CD Pipeline
 
