@@ -15,3 +15,7 @@ scrape_configs:
     static_configs:
       - targets: ['indexer:8082']
 
+  - job_name: 'analytics'
+    static_configs:
+      - targets: ['analytics:8084']
+
