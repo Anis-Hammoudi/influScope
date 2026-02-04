@@ -1,0 +1,19 @@
+syntax = "proto3";
+
+package analytics;
+option go_package = "github.com/hammo/influScope/gen/analytics";
+
+service AnalyticsService {
+  // Takes raw stats and returns a calculated engagement rate
+  rpc CalculateEngagement (EngagementRequest) returns (EngagementResponse);
+}
+
+message EngagementRequest {
+  string username = 1;
+  int64 followers = 2;
+  string platform = 3;
+}
+
+message EngagementResponse {
+  double engagement_rate = 1;
+}

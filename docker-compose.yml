@@ -101,6 +101,15 @@ services:
     ports:
       - "8080:8080"
 
+  analytics:
+    build:
+      context: .
+      dockerfile: analytics/Dockerfile
+    ports:
+      - "8084:8084"
+    restart: on-failure
+
+
 volumes:
   elasticsearch_data:
   rabbitmq_data:

@@ -3,6 +3,7 @@ FROM golang:1.25-alpine AS builder
 WORKDIR /app
 # 1. Copy Dependency Files
 COPY pkg ./pkg
+COPY gen ./gen
 COPY indexer/go.mod indexer/go.sum ./indexer/
 
 # 2. Download Dependencies
