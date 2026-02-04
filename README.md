@@ -36,8 +36,6 @@ graph LR
     Indexer -.->|Metrics| Prom
 ```
 
-#Here is the final, formatted Markdown block for your README. Copy and paste this directly after your Mermaid diagram.
-
 Markdown
 ## Services
 
