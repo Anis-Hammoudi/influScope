@@ -1,7 +1,9 @@
-name: Build & Publish Docker Images
+name: CI/CD Pipeline
 
 on:
   push:
+    branches: [ "main" ]
+  pull_request:
     branches: [ "main" ]
 
 env:
@@ -9,7 +11,42 @@ env:
   IMAGE_NAME: ${{ github.repository }}
 
 jobs:
+  test:
+    name: Run Unit Tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: '1.25'
+          cache: true
+
+      - name: Test Scraper
+        run: |
+          cd scraper
+          go test -v ./...
+
+      - name: Test Indexer
+        run: |
+          cd indexer
+          go test -v ./...
+
+      - name: Test Analytics
+        run: |
+          cd analytics
+          go test -v ./...
+
+      - name: Test API
+        run: |
+          cd api
+          go test -v ./...
+
   build-and-push:
+    name: Build & Publish Docker Images
+    needs: test
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -28,21 +65,16 @@ jobs:
 
       - name: Build and push Docker images
         run: |
-          # Convert repo name to lowercase for Docker image tag
           REPO_LOWER=$(echo "${{ github.repository }}" | tr '[:upper:]' '[:lower:]')
           
-          # 1. Build & Push Scraper
           docker build -t ghcr.io/$REPO_LOWER/scraper:latest -f scraper/Dockerfile .
           docker push ghcr.io/$REPO_LOWER/scraper:latest
           
-          # 2. Build & Push Indexer
           docker build -t ghcr.io/$REPO_LOWER/indexer:latest -f indexer/Dockerfile .
           docker push ghcr.io/$REPO_LOWER/indexer:latest
           
-          # 3. Build & Push Analytics (New Service)
           docker build -t ghcr.io/$REPO_LOWER/analytics:latest -f analytics/Dockerfile .
           docker push ghcr.io/$REPO_LOWER/analytics:latest
           
-          # 4. Build & Push API
           docker build -t ghcr.io/$REPO_LOWER/api:latest -f api/Dockerfile .
           docker push ghcr.io/$REPO_LOWER/api:latest
