@@ -52,7 +52,6 @@ func setupRouter(es *elasticsearch.Client) *gin.Engine {
 		}
 		defer res.Body.Close()
 
-		// Check for 404 or other ES errors that aren't network errors
 		if res.IsError() {
 			c.JSON(500, gin.H{"error": "Elasticsearch returned an error"})
 			return
@@ -73,9 +72,20 @@ func setupRouter(es *elasticsearch.Client) *gin.Engine {
 			if hitsList, ok := hitsMap["hits"].([]interface{}); ok {
 				for _, hit := range hitsList {
 					source := hit.(map[string]interface{})["_source"]
-					tmp, _ := json.Marshal(source)
+					
+					tmp, err := json.Marshal(source)
+					if err != nil {
+						log.Printf("Error marshalling source: %v", err)
+						continue
+					}
+					
 					var inf models.Influencer
-					json.Unmarshal(tmp, &inf)
+					// Linter Fix: Check Unmarshal error
+					if err := json.Unmarshal(tmp, &inf); err != nil {
+						log.Printf("Error unmarshalling to struct: %v", err)
+						continue
+					}
+					
 					influencers = append(influencers, inf)
 				}
 			}
@@ -108,5 +118,7 @@ func main() {
 	r := setupRouter(es)
 
 	// 3. Start Server
-	r.Run(":8080")
+	if err := r.Run(":8080"); err != nil {
+		log.Fatalf("Failed to start server: %v", err)
+	}
 }
