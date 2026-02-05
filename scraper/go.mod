@@ -4,7 +4,6 @@ go 1.24.0
 
 
 
-toolchain go1.25.0
 
 replace github.com/hammo/influScope/pkg => ../pkg
 
