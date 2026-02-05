@@ -109,7 +109,7 @@ eksctl delete cluster -f cluster-config.yaml
 
 
 <p align="center">
-  <img src="assets/fashion.png.png" width="600" title="API JSON Response">
+  <img src="assets/fashion.png" width="600" title="API JSON Response">
   <br>
   <em>Live API Response from AWS Load Balancer</em>
 </p>
