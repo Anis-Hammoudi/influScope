@@ -80,18 +80,18 @@ func TestSearchEndpoint_Success(t *testing.T) {
 	// Mock valid Elasticsearch Response
 	// This mimics the structure: hits -> hits -> _source -> {influencer}
 	mockESResponse := `{
-		"hits": {
-			"hits": [
-				{
-					"_source": {
-						"username": "test_guru",
-						"category": "Tech",
-						"followers": 5000
-					}
-				}
-			]
-		}
-	}`
+        "hits": {
+            "hits": [
+                {
+                    "_source": {
+                        "username": "test_guru",
+                        "category": "Tech",
+                        "followers": 5000
+                    }
+                }
+            ]
+        }
+    }`
 
 	client := getMockClient(200, mockESResponse)
 	router := setupRouter(client)
@@ -109,10 +109,7 @@ func TestSearchEndpoint_Success(t *testing.T) {
 	// Assert Body contains our data
 	var response map[string]interface{}
 	if err := json.Unmarshal(w.Body.Bytes(), &response); err != nil {
-    t.Fatalf("Failed to unmarshal response: %v", err)
-    }
-	if err != nil {
-		t.Fatalf("Failed to parse response JSON: %v", err)
+		t.Fatalf("Failed to unmarshal response: %v", err)
 	}
 
 	// Check "count"
@@ -133,10 +130,10 @@ func TestSearchEndpoint_EmptyResults(t *testing.T) {
 
 	// Mock empty response from ES
 	mockESResponse := `{
-		"hits": {
-			"hits": []
-		}
-	}`
+        "hits": {
+            "hits": []
+        }
+    }`
 
 	client := getMockClient(200, mockESResponse)
 	router := setupRouter(client)
@@ -151,8 +148,8 @@ func TestSearchEndpoint_EmptyResults(t *testing.T) {
 
 	var response map[string]interface{}
 	if err := json.Unmarshal(w.Body.Bytes(), &response); err != nil {
-    t.Fatalf("Failed to unmarshal response: %v", err)
-    }
+		t.Fatalf("Failed to unmarshal response: %v", err)
+	}
 
 	if response["count"].(float64) != 0 {
 		t.Errorf("Expected count 0, got %v", response["count"])
