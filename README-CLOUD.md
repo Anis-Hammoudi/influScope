@@ -117,5 +117,5 @@ eksctl delete cluster -f cluster-config.yaml
 <p align="center">
   <img src="assets/cliprint.png" width="600" title="API JSON Response">
   <br>
-  <em>Live API Response from AWS Load Balancer</em>
+  <em>Live pods running and api ip adress</em>
 </p>
