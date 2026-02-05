@@ -51,8 +51,6 @@ func (s *server) CalculateEngagement(ctx context.Context, req *pb.EngagementRequ
 	// Increment request counter (labeled by platform)
 	engagementRequests.WithLabelValues(req.Platform).Inc()
 
-	rand.Seed(time.Now().UnixNano())
-
 	// Simulate complex logic: TikTok usually has higher engagement than Instagram
 	baseRate := 3.0
 	if req.Platform == "TikTok" {
