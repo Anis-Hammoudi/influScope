@@ -16,23 +16,23 @@ The system follows a hybrid communication pattern to ensure high throughput and 
 ```mermaid
 graph LR
     subgraph Ingestion
-    Scraper -->|1. Upload| S3[(S3 / MinIO)]
-    Scraper -->|2. Publish| RMQ(RabbitMQ)
-    end
-    
-    subgraph Processing
-    RMQ --> Indexer
-    Indexer <== gRPC ==> Analytics[Analytics Svc]
-    Indexer -->|3. Index| ES[(Elasticsearch)]
-    end
-    
-    subgraph Access
-    API -->|4. Search| ES
+        Scraper -->|1. Upload| S3[(S3 / MinIO)]
+        Scraper -->|2. Publish| RMQ(RabbitMQ)
     end
 
-    %% Observability
+    subgraph Processing
+        RMQ --> Indexer
+        Indexer <== gRPC ==> Analytics[Analytics Svc]
+        Indexer -->|3. Index| ES[(Elasticsearch)]
+    end
+
+    subgraph Access
+        API -->|4. Search| ES
+    end
+
+%% Observability (Matches prometheus.yml targets)
     Prom(Prometheus)
-    Scraper & Indexer -.->|Metrics| Prom
+    Scraper & Indexer & Analytics -.->|Metrics :808x| Prom
 ```
 
 ## Data Flow

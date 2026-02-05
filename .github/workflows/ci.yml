@@ -8,7 +8,6 @@ on:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.repository }}
 
 jobs:
   test:
@@ -16,36 +15,28 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Set up Go
-        uses: actions/setup-go@v4
+        uses: actions/setup-go@v5
         with:
           go-version: '1.25'
           cache: true
 
       - name: Test Scraper
-        run: |
-          cd scraper
-          go test -v ./...
+        run: go test -v ./scraper/...
 
       - name: Test Indexer
-        run: |
-          cd indexer
-          go test -v ./...
+        run: go test -v ./indexer/...
 
       - name: Test Analytics
-        run: |
-          cd analytics
-          go test -v ./...
+        run: go test -v ./analytics/...
 
       - name: Test API
-        run: |
-          cd api
-          go test -v ./...
+        run: go test -v ./api/...
 
   build-and-push:
-    name: Build & Publish Docker Images
+    name: Build & Publish Images
     needs: test
     runs-on: ubuntu-latest
     permissions:
@@ -54,27 +45,47 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
-      - name: Log in to the Container registry
-        uses: docker/login-action@v2
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Build and push Docker images
+      - name: Lowercase Repo Name
         run: |
-          REPO_LOWER=$(echo "${{ github.repository }}" | tr '[:upper:]' '[:lower:]')
-          
-          docker build -t ghcr.io/$REPO_LOWER/scraper:latest -f scraper/Dockerfile .
-          docker push ghcr.io/$REPO_LOWER/scraper:latest
-          
-          docker build -t ghcr.io/$REPO_LOWER/indexer:latest -f indexer/Dockerfile .
-          docker push ghcr.io/$REPO_LOWER/indexer:latest
-          
-          docker build -t ghcr.io/$REPO_LOWER/analytics:latest -f analytics/Dockerfile .
-          docker push ghcr.io/$REPO_LOWER/analytics:latest
-          
-          docker build -t ghcr.io/$REPO_LOWER/api:latest -f api/Dockerfile .
-          docker push ghcr.io/$REPO_LOWER/api:latest
+          echo "REPO_LOWER=${GITHUB_REPOSITORY,,}" >> ${GITHUB_ENV}
+
+      - name: Build and Push Scraper
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: scraper/Dockerfile
+          push: true
+          tags: ghcr.io/${{ env.REPO_LOWER }}/scraper:latest
+
+      - name: Build and Push Indexer
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: indexer/Dockerfile
+          push: true
+          tags: ghcr.io/${{ env.REPO_LOWER }}/indexer:latest
+
+      - name: Build and Push Analytics
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: analytics/Dockerfile
+          push: true
+          tags: ghcr.io/${{ env.REPO_LOWER }}/analytics:latest
+
+      - name: Build and Push API
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: api/Dockerfile
+          push: true
+          tags: ghcr.io/${{ env.REPO_LOWER }}/api:latest
