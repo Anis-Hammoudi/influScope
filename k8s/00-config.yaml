@@ -3,11 +3,18 @@ kind: ConfigMap
 metadata:
   name: influscope-config
 data:
-  # Connection Strings
+  # Internal Service URLs
   ELASTICSEARCH_URL: "http://elasticsearch:9200"
   RABBITMQ_URL: "amqp://guest:guest@rabbitmq:5672/"
   S3_ENDPOINT: "http://s3:9000"
+  ANALYTICS_SERVICE_ADDR: "analytics:50051"
 
-  # Tuning
+  # S3 Credentials (Matches 01-infrastructure.yaml)
+  AWS_ACCESS_KEY_ID: "admin"
+  AWS_SECRET_ACCESS_KEY: "password"
+  AWS_REGION: "us-east-1"
+  S3_BUCKET_NAME: "avatars"
+
+  # App Tuning
   SCRAPER_INTERVAL: "1s"
   ES_INDEX_NAME: "influencers"

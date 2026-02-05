@@ -18,9 +18,7 @@ spec:
     spec:
       containers:
         - name: api
-          # UPDATED: Points to your GitHub Registry
           image: ghcr.io/anis-hammoudi/influscope/api:latest
-          # UPDATED: Forces K8s to check for updates
           imagePullPolicy: Always
           ports:
             - containerPort: 8080
@@ -74,17 +72,17 @@ spec:
     spec:
       containers:
         - name: scraper
-          # UPDATED
           image: ghcr.io/anis-hammoudi/influscope/scraper:latest
           imagePullPolicy: Always
           envFrom:
             - configMapRef:
                 name: influscope-config
+          # Scraper needs time to connect to S3/RabbitMQ
           livenessProbe:
             httpGet:
               path: /metrics
               port: 8081
-            initialDelaySeconds: 10
+            initialDelaySeconds: 15
             periodSeconds: 30
 
 # --- Indexer (The Consumer) ---
@@ -108,7 +106,6 @@ spec:
     spec:
       containers:
         - name: indexer
-          # UPDATED
           image: ghcr.io/anis-hammoudi/influscope/indexer:latest
           imagePullPolicy: Always
           envFrom:
@@ -141,9 +138,13 @@ spec:
     spec:
       containers:
         - name: analytics
-          # UPDATED
           image: ghcr.io/anis-hammoudi/influscope/analytics:latest
           imagePullPolicy: Always
+          ports:
+            - containerPort: 50051 # gRPC
+              name: grpc
+            - containerPort: 8084  # Metrics
+              name: metrics
           envFrom:
             - configMapRef:
                 name: influscope-config
@@ -152,3 +153,16 @@ spec:
               path: /metrics
               port: 8084
             initialDelaySeconds: 10
+---
+# Service for Indexer to find Analytics via gRPC
+apiVersion: v1
+kind: Service
+metadata:
+  name: analytics
+spec:
+  ports:
+    - port: 50051
+      targetPort: 50051
+      name: grpc
+  selector:
+    component: analytics
