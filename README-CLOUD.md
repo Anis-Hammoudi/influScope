@@ -2,6 +2,8 @@
 
 This document details the cloud infrastructure and deployment strategy for the InfluScope platform. The application is designed to run on a production-grade Kubernetes cluster hosted on AWS (Amazon EKS), utilizing cloud-native patterns for storage, networking, and orchestration.
 
+
+
 ## Architecture Overview
 
 The system is deployed on AWS Elastic Kubernetes Service (EKS) to simulate a real-world high-availability environment.
@@ -9,13 +11,13 @@ The system is deployed on AWS Elastic Kubernetes Service (EKS) to simulate a rea
 ### Infrastructure Components
 * **Cloud Provider:** AWS (Region: us-east-1)
 * **Orchestrator:** Amazon EKS (Managed Kubernetes Control Plane)
-* **Compute:** Managed Node Group consisting of 2x `t3.medium` instances (Amazon Linux 2).
+* **Compute:** Managed Node Group consisting of 2x **`t3.small`** instances (Amazon Linux 2).
 * **Storage:** AWS EBS (Elastic Block Store) GP3 volumes, provisioned dynamically via the EBS CSI Driver.
-* **Networking:** AWS Classic Load Balancer (CLB) exposing the API Gateway to the public internet.
+* **Networking:** AWS Classic Load Balancer (CLB) exposing the API Gateway to the public internet on Port 80.
 * **Container Registry:** GitHub Container Registry (GHCR) for secure, automated image storage.
 
 ### Data Flow
-1. **Public Traffic:** Enters via the AWS Load Balancer -> Kubernetes Service (NodePort) -> API Pod.
+1. **Public Traffic:** Enters via the AWS Load Balancer (Port 80) -> Kubernetes Service -> API Pod (Port 8080).
 2. **Internal Communication:**
     * **Async:** Scraper publishes metadata to RabbitMQ (StatefulSet).
     * **Sync:** Indexer calls Analytics Service via gRPC (ClusterIP).
@@ -83,16 +85,16 @@ Retrieve the external access URL for the API Gateway.
 kubectl get svc api-service
 ```
 
-Test the endpoint using curl or a browser:
+Test the endpoint using curl or a browser (Use the EXTERNAL-IP provided by the command above):
 
 ```
-http://a6a6579fe596e4a88ab127b0eb528b04-954164237.us-east-1.elb.amazonaws.com:8080/search?q=tech
+http://<EXTERNAL-IP>/search?q=tech
 ```
 
+(Note: The Load Balancer listens on Port 80, so no port number is needed in the URL)
 
 ## Design Decisions
-
-**Why Kubernetes (EKS)?** To align with the target architecture of modern tech companies like Upfluence. Using EKS demonstrates the ability to manage managed control planes and worker nodes rather than simple Docker containers.
+**Why Kubernetes (EKS)?** To align with the target architecture of modern tech companies. Using EKS demonstrates the ability to manage managed control planes and worker nodes rather than simple Docker containers.
 
 **Why StatefulSets?** RabbitMQ and Elasticsearch require stable network identities and persistent storage. Deploying them as StatefulSets ensures that if a pod crashes, it reconnects to the same EBS volume, preventing data loss.
 
