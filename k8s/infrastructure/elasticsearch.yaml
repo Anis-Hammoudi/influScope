@@ -1,0 +1,38 @@
+# --- Elasticsearch (Search Engine) ---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: elasticsearch
+spec:
+  serviceName: "elasticsearch"
+  replicas: 1
+  selector:
+    matchLabels:
+      app: elasticsearch
+  template:
+    metadata:
+      labels:
+        app: elasticsearch
+    spec:
+      containers:
+        - name: elasticsearch
+          image: docker.elastic.co/elasticsearch/elasticsearch:7.17.9
+          env:
+            - name: discovery.type
+              value: single-node
+          ports:
+            - containerPort: 9200
+          resources:
+            requests:
+              memory: "1Gi"
+              cpu: "500m"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: elasticsearch
+spec:
+  ports:
+    - port: 9200
+  selector:
+    app: elasticsearch

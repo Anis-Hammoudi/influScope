@@ -109,6 +109,31 @@ The system is deployed on AWS Elastic Kubernetes Service (EKS) to simulate a rea
 - **Storage**: AWS EBS GP3 volumes via EBS CSI Driver.
 - **Networking**: AWS Classic Load Balancer (CLB) exposing the API.
 
+### Kubernetes File Structure
+
+The Kubernetes manifests are organized into separate files for better maintainability:
+
+```
+k8s/
+├── 00-config.yaml           # ConfigMap with environment variables
+├── infrastructure/          # Stateful services
+│   ├── elasticsearch.yaml
+│   ├── minio.yaml
+│   └── rabbitmq.yaml
+└── apps/                    # Application microservices
+    ├── api-deployment.yaml
+    ├── api-service.yaml
+    ├── analytics-deployment.yaml
+    ├── analytics-service.yaml
+    ├── indexer-deployment.yaml
+    └── scraper-deployment.yaml
+```
+
+This structure allows you to:
+- Deploy individual components: `kubectl apply -f k8s/apps/api-deployment.yaml`
+- Update only infrastructure: `kubectl apply -f k8s/infrastructure/`
+- Deploy all services: `kubectl apply -f k8s/`
+
 ### Prerequisites for Deployment
 
 - AWS CLI (`aws configure`)
@@ -135,14 +160,14 @@ kubectl apply -f k8s/00-config.yaml
 Deploy Elasticsearch, RabbitMQ, and MinIO. Wait 60s for EBS volumes to attach.
 
 ```bash
-kubectl apply -f k8s/01-infrastructure.yaml
+kubectl apply -f k8s/infrastructure/
 ```
 
 **4. Deploy Microservices**
 Deploy API, Scraper, Indexer, and Analytics.
 
 ```bash
-kubectl apply -f k8s/02-apps.yaml
+kubectl apply -f k8s/apps/
 ```
 
 **5. Verification**

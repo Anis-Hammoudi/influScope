@@ -1,0 +1,30 @@
+# --- Indexer (The Consumer) ---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: indexer
+  labels:
+    app: influscope
+    component: indexer
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      component: indexer
+  template:
+    metadata:
+      labels:
+        component: indexer
+    spec:
+      containers:
+        - name: indexer
+          image: ghcr.io/anis-hammoudi/influscope/indexer:latest
+          imagePullPolicy: Always
+          envFrom:
+            - configMapRef:
+                name: influscope-config
+          livenessProbe:
+            httpGet:
+              path: /metrics
+              port: 8082
+            initialDelaySeconds: 10

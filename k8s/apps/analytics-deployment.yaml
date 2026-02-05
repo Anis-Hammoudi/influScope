@@ -1,0 +1,35 @@
+# --- Analytics (The Calculator) ---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: analytics
+  labels:
+    app: influscope
+    component: analytics
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      component: analytics
+  template:
+    metadata:
+      labels:
+        component: analytics
+    spec:
+      containers:
+        - name: analytics
+          image: ghcr.io/anis-hammoudi/influscope/analytics:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 50051 # gRPC
+              name: grpc
+            - containerPort: 8084  # Metrics
+              name: metrics
+          envFrom:
+            - configMapRef:
+                name: influscope-config
+          livenessProbe:
+            httpGet:
+              path: /metrics
+              port: 8084
+            initialDelaySeconds: 10
