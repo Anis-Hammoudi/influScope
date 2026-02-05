@@ -126,9 +126,11 @@ func (s *StorageService) UploadAvatar(username string) string {
 func main() {
 	// Start a tiny web server for Prometheus in the background
 	go func() {
-		http.Handle("/metrics", promhttp.Handler())
-		http.ListenAndServe(":8081", nil)
-	}()
+        http.Handle("/metrics", promhttp.Handler())
+        if err := http.ListenAndServe(":8081", nil); err != nil {
+             log.Printf("Metrics server stopped: %v", err)
+        }
+    }()
 	// 1. Initialize Random Seed
 	gofakeit.Seed(time.Now().UnixNano())
 	const exchangeName = "influencer-events"

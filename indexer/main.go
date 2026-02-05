@@ -53,11 +53,12 @@ func init() {
 
 func main() {
 	// 1. START METRICS SERVER (Background)
-	go func() {
-		http.Handle("/metrics", promhttp.Handler())
-		log.Println(" Metrics server listening on :8082")
-		http.ListenAndServe(":8082", nil)
-	}()
+		go func() {
+        http.Handle("/metrics", promhttp.Handler())
+        if err := http.ListenAndServe(":8082", nil); err != nil {
+             log.Printf("Metrics server stopped: %v", err)
+        }
+    }()
 
 	// 2. Connect to Elasticsearch
 	esCfg := elasticsearch.Config{
