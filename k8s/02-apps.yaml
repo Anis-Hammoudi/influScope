@@ -18,8 +18,10 @@ spec:
     spec:
       containers:
         - name: api
-          image: hammo/influscope-api:latest
-          imagePullPolicy: IfNotPresent
+          # UPDATED: Points to your GitHub Registry
+          image: ghcr.io/anis-hammoudi/influscope/api:latest
+          # UPDATED: Forces K8s to check for updates
+          imagePullPolicy: Always
           ports:
             - containerPort: 8080
           envFrom:
@@ -72,12 +74,12 @@ spec:
     spec:
       containers:
         - name: scraper
-          image: hammo/influscope-scraper:latest
-          imagePullPolicy: IfNotPresent
+          # UPDATED
+          image: ghcr.io/anis-hammoudi/influscope/scraper:latest
+          imagePullPolicy: Always
           envFrom:
             - configMapRef:
                 name: influscope-config
-          # Note: Scraper depends on S3 service being active
           livenessProbe:
             httpGet:
               path: /metrics
@@ -106,8 +108,9 @@ spec:
     spec:
       containers:
         - name: indexer
-          image: hammo/influscope-indexer:latest
-          imagePullPolicy: IfNotPresent
+          # UPDATED
+          image: ghcr.io/anis-hammoudi/influscope/indexer:latest
+          imagePullPolicy: Always
           envFrom:
             - configMapRef:
                 name: influscope-config
@@ -115,4 +118,37 @@ spec:
             httpGet:
               path: /metrics
               port: 8082
+            initialDelaySeconds: 10
+
+# --- Analytics (The Calculator) ---
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: analytics
+  labels:
+    app: influscope
+    component: analytics
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      component: analytics
+  template:
+    metadata:
+      labels:
+        component: analytics
+    spec:
+      containers:
+        - name: analytics
+          # UPDATED
+          image: ghcr.io/anis-hammoudi/influscope/analytics:latest
+          imagePullPolicy: Always
+          envFrom:
+            - configMapRef:
+                name: influscope-config
+          livenessProbe:
+            httpGet:
+              path: /metrics
+              port: 8084
             initialDelaySeconds: 10
