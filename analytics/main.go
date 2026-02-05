@@ -6,7 +6,6 @@ import (
 	"math/rand"
 	"net"
 	"net/http"
-	"time"
 
 	pb "github.com/hammo/influScope/gen/analytics"
 	"github.com/prometheus/client_golang/prometheus"
