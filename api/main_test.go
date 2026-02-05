@@ -108,7 +108,9 @@ func TestSearchEndpoint_Success(t *testing.T) {
 
 	// Assert Body contains our data
 	var response map[string]interface{}
-	err := json.Unmarshal(w.Body.Bytes(), &response)
+	if err := json.Unmarshal(w.Body.Bytes(), &response); err != nil {
+    t.Fatalf("Failed to unmarshal response: %v", err)
+    }
 	if err != nil {
 		t.Fatalf("Failed to parse response JSON: %v", err)
 	}
@@ -148,7 +150,9 @@ func TestSearchEndpoint_EmptyResults(t *testing.T) {
 	}
 
 	var response map[string]interface{}
-	json.Unmarshal(w.Body.Bytes(), &response)
+	if err := json.Unmarshal(w.Body.Bytes(), &response); err != nil {
+    t.Fatalf("Failed to unmarshal response: %v", err)
+    }
 
 	if response["count"].(float64) != 0 {
 		t.Errorf("Expected count 0, got %v", response["count"])
