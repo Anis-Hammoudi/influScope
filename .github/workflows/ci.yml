@@ -24,16 +24,24 @@ jobs:
           cache: true
 
       - name: Test Scraper
-        run: go test -v ./scraper/...
+        run: |
+          cd scraper
+          go test -v ./...
 
       - name: Test Indexer
-        run: go test -v ./indexer/...
+        run: |
+          cd indexer
+          go test -v ./...
 
       - name: Test Analytics
-        run: go test -v ./analytics/...
+        run: |
+          cd analytics
+          go test -v ./...
 
       - name: Test API
-        run: go test -v ./api/...
+        run: |
+          cd api
+          go test -v ./...
 
   build-and-push:
     name: Build & Publish Images
