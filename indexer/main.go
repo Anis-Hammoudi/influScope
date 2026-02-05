@@ -53,12 +53,13 @@ func init() {
 
 func main() {
 	// 1. START METRICS SERVER (Background)
-		go func() {
-        http.Handle("/metrics", promhttp.Handler())
-        if err := http.ListenAndServe(":8082", nil); err != nil {
-             log.Printf("Metrics server stopped: %v", err)
-        }
-    }()
+	go func() {
+		http.Handle("/metrics", promhttp.Handler())
+		// Linter Fix: Check error return
+		if err := http.ListenAndServe(":8082", nil); err != nil {
+			log.Printf("Metrics server stopped: %v", err)
+		}
+	}()
 
 	// 2. Connect to Elasticsearch
 	esCfg := elasticsearch.Config{
@@ -68,7 +69,9 @@ func main() {
 	if err != nil {
 		log.Fatalf("Error creating the client: %s", err)
 	}
-	conn, err := grpc.Dial("analytics:50051", grpc.WithTransportCredentials(insecure.NewCredentials()))
+
+	// Linter Fix: Use NewClient instead of Dial (Deprecated)
+	conn, err := grpc.NewClient("analytics:50051", grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		log.Fatalf("did not connect to gRPC: %v", err)
 	}
@@ -121,8 +124,10 @@ func main() {
 		var influencer models.Influencer
 		if err := json.Unmarshal(delivery.Message.Body, &influencer); err != nil {
 			log.Printf("cdJSON Error: %v", err)
-			// Important: Ack the bad message so we don't process it forever
-			consumer.Ack(ctx, delivery.DeliveryTag, amqp.AckOptions{})
+			// Linter Fix: Check error on Ack
+			if err := consumer.Ack(ctx, delivery.DeliveryTag, amqp.AckOptions{}); err != nil {
+				log.Printf("Failed to ACK bad message: %v", err)
+			}
 			continue
 		}
 		grpcCtx, cancel := context.WithTimeout(context.Background(), time.Second)
