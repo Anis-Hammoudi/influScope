@@ -1,6 +1,6 @@
 module github.com/hammo/influScope/analytics
 
-go 1.25.2
+go 1.24.0
 
 replace github.com/hammo/influScope/gen/analytics => ../gen/analytics
 

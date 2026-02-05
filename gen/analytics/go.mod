@@ -1,6 +1,6 @@
 module github.com/hammo/influScope/gen/analytics
 
-go 1.25.2
+go 1.24.0
 
 require (
 	google.golang.org/grpc v1.78.0
