@@ -106,3 +106,16 @@ To stop billing and remove all AWS resources (EC2, Load Balancers, Volumes):
 ```bash
 eksctl delete cluster -f cluster-config.yaml
 ```
+
+
+<p align="center">
+  <img src="assets/fashion.png.png" width="600" title="API JSON Response">
+  <br>
+  <em>Live API Response from AWS Load Balancer</em>
+</p>
+
+<p align="center">
+  <img src="assets/cliprint.png" width="600" title="API JSON Response">
+  <br>
+  <em>Live API Response from AWS Load Balancer</em>
+</p>
