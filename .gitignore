@@ -11,4 +11,3 @@ api-bin
 
 # Go
 vendor/
-go.work
