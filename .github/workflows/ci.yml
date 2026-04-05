@@ -36,3 +36,6 @@ lint:
       - name: Test Service
         # FIX 2: Run tests from the root directory, pointing to the service folder
         run: go test -v ./${{ matrix.service }}/...
+
+on:
+jobs:
