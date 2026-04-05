@@ -1,3 +1,4 @@
+# .gitignore
 # Binaries
 binary
 scraper-bin
@@ -11,5 +12,3 @@ api-bin
 # Go
 vendor/
 go.work
-
-s3-fix.yaml

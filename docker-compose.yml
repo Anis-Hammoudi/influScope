@@ -69,9 +69,12 @@ services:
         condition: service_started
     environment:
       RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672/
+      # Add these S3 variables!
+      S3_ENDPOINT: http://s3:9000
+      S3_ACCESS_KEY: admin
+      S3_SECRET_KEY: password
     ports:
       - "8081:8081"
-
   # 7. Indexer Service
   indexer:
     build:
