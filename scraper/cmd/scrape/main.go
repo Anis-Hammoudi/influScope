@@ -3,12 +3,10 @@ package main
 import (
 	"context"
 	"log"
-	"math/rand"
 	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
-	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
@@ -19,7 +17,6 @@ import (
 
 func main() {
 	// Note: rand.Seed is deprecated in Go 1.20+, but perfectly fine to leave for now
-	rand.Seed(time.Now().UnixNano())
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
