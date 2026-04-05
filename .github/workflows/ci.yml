@@ -20,15 +20,19 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
         with:
-          go-version: '1.24'
+          go-version: '1.25' # Aligned with Dockerfile
       - name: golangci-lint
         uses: golangci/golangci-lint-action@v4
         with:
           version: latest
           working-directory: ${{ matrix.service }}
+
   test:
     name: Run Unit Tests
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        service: [ scraper, indexer, analytics, api, pkg ] # Added pkg!
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -36,33 +40,21 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: '1.24'
+          go-version: '1.25' # Aligned with Dockerfile
           cache: true
 
-      - name: Test Scraper
+      - name: Test Service
         run: |
-          cd scraper
-          go test -v ./...
-
-      - name: Test Indexer
-        run: |
-          cd indexer
-          go test -v ./...
-
-      - name: Test Analytics
-        run: |
-          cd analytics
-          go test -v ./...
-
-      - name: Test API
-        run: |
-          cd api
+          cd ${{ matrix.service }}
           go test -v ./...
 
   build-and-push:
     name: Build & Publish Images
-    needs: test
+    needs: [lint, test] # Now waits for linting to pass too
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        service: [ scraper, indexer, analytics, api ]
     permissions:
       contents: read
       packages: write
@@ -82,34 +74,10 @@ jobs:
         run: |
           echo "REPO_LOWER=${GITHUB_REPOSITORY,,}" >> ${GITHUB_ENV}
 
-      - name: Build and Push Scraper
+      - name: Build and Push
         uses: docker/build-push-action@v5
         with:
           context: .
-          file: scraper/Dockerfile
-          push: true
-          tags: ghcr.io/${{ env.REPO_LOWER }}/scraper:latest
-
-      - name: Build and Push Indexer
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          file: indexer/Dockerfile
-          push: true
-          tags: ghcr.io/${{ env.REPO_LOWER }}/indexer:latest
-
-      - name: Build and Push Analytics
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          file: analytics/Dockerfile
-          push: true
-          tags: ghcr.io/${{ env.REPO_LOWER }}/analytics:latest
-
-      - name: Build and Push API
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          file: api/Dockerfile
-          push: true
-          tags: ghcr.io/${{ env.REPO_LOWER }}/api:latest
+          file: ${{ matrix.service }}/Dockerfile
+          push: ${{ github.event_name == 'push' }} # Only push on merges to main, not on PRs!
+          tags: ghcr.io/${{ env.REPO_LOWER }}/${{ matrix.service }}:latest
