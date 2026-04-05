@@ -1,38 +1,28 @@
-name: CI/CD Pipeline
-
-on:
-  push:
-    branches: [ "main" ]
-  pull_request:
-    branches: [ "main" ]
-
-env:
-  REGISTRY: ghcr.io
-
-jobs:
-  lint:
-    name: Lint Code
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        service: [ scraper, indexer, analytics, api ]
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-go@v5
-        with:
-          go-version: '1.25' # Aligned with Dockerfile
-      - name: golangci-lint
-        uses: golangci/golangci-lint-action@v4
-        with:
-          version: latest
-          working-directory: ${{ matrix.service }}
+lint:
+  name: Lint Code
+  runs-on: ubuntu-latest
+  strategy:
+    matrix:
+      service: [ scraper, indexer, analytics, api ]
+  steps:
+    - uses: actions/checkout@v4
+    - uses: actions/setup-go@v5
+      with:
+        go-version: '1.25'
+    - name: golangci-lint
+      uses: golangci/golangci-lint-action@v4
+      with:
+        version: latest
+        working-directory: ${{ matrix.service }}
+        # FIX 1: Compile the linter from source using Go 1.25
+        install-mode: goinstall
 
   test:
     name: Run Unit Tests
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        service: [ scraper, indexer, analytics, api, pkg ] # Added pkg!
+        service: [ scraper, indexer, analytics, api, pkg ]
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -40,44 +30,9 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: '1.25' # Aligned with Dockerfile
+          go-version: '1.25'
           cache: true
 
       - name: Test Service
-        run: |
-          cd ${{ matrix.service }}
-          go test -v ./...
-
-  build-and-push:
-    name: Build & Publish Images
-    needs: [lint, test] # Now waits for linting to pass too
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        service: [ scraper, indexer, analytics, api ]
-    permissions:
-      contents: read
-      packages: write
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Log in to GHCR
-        uses: docker/login-action@v3
-        with:
-          registry: ${{ env.REGISTRY }}
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Lowercase Repo Name
-        run: |
-          echo "REPO_LOWER=${GITHUB_REPOSITORY,,}" >> ${GITHUB_ENV}
-
-      - name: Build and Push
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          file: ${{ matrix.service }}/Dockerfile
-          push: ${{ github.event_name == 'push' }} # Only push on merges to main, not on PRs!
-          tags: ghcr.io/${{ env.REPO_LOWER }}/${{ matrix.service }}:latest
+        # FIX 2: Run tests from the root directory, pointing to the service folder
+        run: go test -v ./${{ matrix.service }}/...
