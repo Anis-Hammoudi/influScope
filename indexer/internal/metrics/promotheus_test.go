@@ -6,6 +6,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/prometheus/client_golang/prometheus/testutil"
 )
 
@@ -29,15 +30,14 @@ func TestMetricsInitialization(t *testing.T) {
 }
 
 func TestMetricsServerEndpoint(t *testing.T) {
-	// Start server on a test port
 	pm := NewPrometheusMetrics()
-	go pm.StartServer(":8083") // Use a different port for testing
 
 	req := httptest.NewRequest("GET", "/metrics", nil)
 	w := httptest.NewRecorder()
 
-	// Note: In a real scenario, you'd use the default mux where promhttp is registered
-	http.DefaultServeMux.ServeHTTP(w, req)
+	// Grab the handler tied directly to our local registry
+	handler := promhttp.HandlerFor(pm.registry, promhttp.HandlerOpts{})
+	handler.ServeHTTP(w, req)
 
 	resp := w.Result()
 	defer resp.Body.Close()

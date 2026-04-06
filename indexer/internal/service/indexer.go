@@ -41,7 +41,9 @@ func (s *IndexerService) Start(ctx context.Context) {
 		var influencer models.Influencer
 		if err := json.Unmarshal(msg.Body(), &influencer); err != nil {
 			log.Printf("JSON Decode Error: %v", err)
-			msg.Ack() // Discard bad messages
+			if ackErr := msg.Ack(); ackErr != nil {
+				log.Printf("Failed to ACK bad message: %v", ackErr)
+			}
 			continue
 		}
 

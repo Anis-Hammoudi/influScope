@@ -9,12 +9,16 @@ import (
 )
 
 type PrometheusMetrics struct {
+	registry        *prometheus.Registry
 	profilesIndexed prometheus.Counter
 	indexingErrors  prometheus.Counter
 }
 
 func NewPrometheusMetrics() *PrometheusMetrics {
+	reg := prometheus.NewRegistry() // Create a local registry
+
 	pm := &PrometheusMetrics{
+		registry: reg,
 		profilesIndexed: prometheus.NewCounter(
 			prometheus.CounterOpts{
 				Name: "influencers_indexed_total",
@@ -29,8 +33,9 @@ func NewPrometheusMetrics() *PrometheusMetrics {
 		),
 	}
 
-	prometheus.MustRegister(pm.profilesIndexed)
-	prometheus.MustRegister(pm.indexingErrors)
+	// Register metrics to the LOCAL registry, not the global one
+	reg.MustRegister(pm.profilesIndexed)
+	reg.MustRegister(pm.indexingErrors)
 	return pm
 }
 
@@ -38,8 +43,13 @@ func (m *PrometheusMetrics) IncIndexed() { m.profilesIndexed.Inc() }
 func (m *PrometheusMetrics) IncError()   { m.indexingErrors.Inc() }
 
 func (m *PrometheusMetrics) StartServer(addr string) {
-	http.Handle("/metrics", promhttp.Handler())
-	if err := http.ListenAndServe(addr, nil); err != nil {
+	// Create a dedicated mux so we don't pollute the global http.DefaultServeMux
+	mux := http.NewServeMux()
+
+	// Expose only our local registry
+	mux.Handle("/metrics", promhttp.HandlerFor(m.registry, promhttp.HandlerOpts{}))
+
+	if err := http.ListenAndServe(addr, mux); err != nil {
 		log.Printf("Metrics server stopped: %v", err)
 	}
 }
