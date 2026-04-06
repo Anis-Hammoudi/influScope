@@ -1,23 +1,23 @@
-# Stage 1: Builder
-FROM golang:1.24-alpine AS builder
+FROM golang:1.25-alpine
+
+# Install git (required by Go to fetch dependencies)
+RUN apk add --no-cache git
+
+# Set the working directory to the root of the app
 WORKDIR /app
-# 1. Copy Dependency Files
-COPY pkg ./pkg
-COPY gen ./gen
-COPY indexer/go.mod indexer/go.sum ./indexer/
 
-# 2. Download Dependencies
+# 1. Copy your entire project
+COPY . .
+
+# 2. Move specifically into the indexer directory
 WORKDIR /app/indexer
-RUN go mod download
 
-# 3. Copy Source Code & Build
-COPY indexer .
-RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-w -s" -o indexer-bin .
+# 3. Generate go.sum and download dependencies automatically
+RUN go mod tidy
 
-# Stage 2: Runner (Tiny Alpine Image)
-FROM alpine:latest
+# 4. Build the executable and place it in the root /app folder
+RUN go build -o /app/indexer-app ./cmd/indexer/main.go
 
-WORKDIR /root/
-COPY --from=builder /app/indexer/indexer-bin .
-
-CMD ["./indexer-bin"]
+# 5. Move back to the root app folder and run it
+WORKDIR /app
+CMD ["./indexer-app"]

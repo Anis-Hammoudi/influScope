@@ -3,6 +3,7 @@ go 1.25.2
 use (
 	./analytics
 	./api
+	./gen/analytics
 	./indexer
 	./pkg
 	./scraper

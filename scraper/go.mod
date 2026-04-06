@@ -41,8 +41,8 @@ require (
 	github.com/upfluence/errors v0.2.15 // indirect
 	github.com/upfluence/pkg/v2 v2.0.1 // indirect
 	github.com/upfluence/stats v0.1.9 // indirect
-	go.yaml.in/yaml/v2 v2.4.2 // indirect
-	golang.org/x/sys v0.36.0 // indirect
+	go.yaml.in/yaml/v2 v2.4.3 // indirect
+	golang.org/x/sys v0.40.0 // indirect
 	golang.org/x/time v0.13.0 // indirect
-	google.golang.org/protobuf v1.36.8 // indirect
+	google.golang.org/protobuf v1.36.11 // indirect
 )
